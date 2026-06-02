@@ -1,20 +1,22 @@
 import numpy as np
 from PIL import Image
 
+
 def mandelbrot(z: complex, c: complex, max_iter: int = 100) -> int:
     iterations = 0
-    while(np.abs(z) < 2 and iterations < max_iter):
+    while np.abs(z) < 2 and iterations < max_iter:
         z = z**2 + c
         iterations += 1
     return iterations
 
+
 rows = 1000
 cols = 1000
-max_iter=100
+max_iter = 100
 
 a = np.zeros((rows, cols), dtype=np.complex128)
 
-xs = np.linspace(-2.0, 0.5,cols)
+xs = np.linspace(-2.0, 0.5, cols)
 ys = np.linspace(-1.12, 1.12, rows)
 
 for i in range(rows):
