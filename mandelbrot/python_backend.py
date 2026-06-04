@@ -26,12 +26,12 @@ def __iteration(z: complex, c: complex, max_iterations: int = 100) -> np.int32:
     return iterations
 
 
-def mandelbrot(c_vals: np.ndarray, max_iterations: int = 100) -> np.int32:
+def mandelbrot(c_values: np.ndarray, max_iterations: int = 100) -> np.int32:
     """Compute the mandelbrot set
 
      Parameters
     ----------
-    c_vals : np.ndarray
+    c_values : np.ndarray
         All c values we will iterate the mandelbrot map for
     max_iterations: int, optional (default=100)
         The number of iterations to bail out at
@@ -41,29 +41,29 @@ def mandelbrot(c_vals: np.ndarray, max_iterations: int = 100) -> np.int32:
     np.ndarray
         The number of iterations for each c value where z became unbounded
     """
-    rows = c_vals.shape[0]
-    cols = c_vals.shape[1]
+    rows = c_values.shape[0]
+    cols = c_values.shape[1]
     counts = np.zeros((rows, cols), dtype=np.int32)
 
     for i in range(rows):
         for j in range(cols):
-            counts[i][j] = __iteration(0, c_vals[i][j], max_iterations=max_iterations)
+            counts[i][j] = __iteration(0, c_values[i][j], max_iterations=max_iterations)
 
     return counts
 
 
-def mandelbrot_threaded(c_vals: np.ndarray, max_iterations: int = 100, n_workers = 12) -> np.int32:
+def mandelbrot_threaded(c_values: np.ndarray, max_iterations: int = 100, n_workers=8) -> np.int32:
     """Compute the mandelbrot set in parallel
 
     This requires free-threaded python (python>=3.14t)
 
     Parameters
     ----------
-    c_vals : np.ndarray
+    c_values : np.ndarray
         All c values we will iterate the mandelbrot map for
     max_iterations: int, optional (default=100)
         The number of iterations to bail out at
-    n_workers: int, optinal (default=12)
+    n_workers: int, optinal (default=8)
         The number of workers to run in parallel
 
     Returns
@@ -74,11 +74,11 @@ def mandelbrot_threaded(c_vals: np.ndarray, max_iterations: int = 100, n_workers
 
     if sys._is_gil_enabled():
         raise RuntimeError("Free-threaded python is required")
-    
+
     from concurrent.futures import ThreadPoolExecutor
 
-    rows = c_vals.shape[0]
-    cols = c_vals.shape[1]
+    rows = c_values.shape[0]
+    cols = c_values.shape[1]
     counts = np.zeros((rows, cols), dtype=np.int32)
 
     def work(row_chunks):
@@ -86,9 +86,7 @@ def mandelbrot_threaded(c_vals: np.ndarray, max_iterations: int = 100, n_workers
         start, end = row_chunks
         for row in range(start, min(end, rows)):
             for col in range(cols):
-                counts[row][col] = __iteration(
-                    0, c_vals[row][col], max_iterations=max_iterations
-                )
+                counts[row][col] = __iteration(0, c_values[row][col], max_iterations=max_iterations)
 
     with ThreadPoolExecutor(max_workers=n_workers) as pool:
         div = rows // n_workers

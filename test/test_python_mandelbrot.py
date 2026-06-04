@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 import sys
 
+
 @pytest.fixture
 def c_values():
     rows = 100
@@ -18,6 +19,7 @@ def c_values():
 
     return c_vals
 
+
 def test_python_serial_mandelbrot():
     c = np.zeros((1, 1), dtype=np.complex128)
     c[0][0] = np.complex128(1, 0)
@@ -29,6 +31,7 @@ def test_python_parallel_mandelbrot():
     c = np.zeros((1, 1), dtype=np.complex128)
     c[0][0] = np.complex128(1, 0)
     assert mandelbrot_threaded(c, n_workers=1) == 3
+
 
 @pytest.mark.skipif(sys._is_gil_enabled(), reason="Free-threaded python is required")
 def test_compare_serial_parallel(c_values):

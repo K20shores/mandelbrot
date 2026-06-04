@@ -1,6 +1,7 @@
 from mandelbrot.python_backend import mandelbrot, mandelbrot_threaded
 import numpy as np
 import pytest
+import sys
 
 
 @pytest.fixture
@@ -25,5 +26,6 @@ def test_python_serial_mandelbrot_benchmark(benchmark, c_values):
 
 @pytest.mark.benchmark
 @pytest.mark.parametrize("n_workers", [1, 2, 4, 8, 12, 24])
+@pytest.mark.skipif(sys._is_gil_enabled(), reason="Free-threaded python is required")
 def test_python_parallel_mandelbrot_benchmark(benchmark, c_values, n_workers):
     benchmark(mandelbrot_threaded, c_values=c_values, n_workers=n_workers)
