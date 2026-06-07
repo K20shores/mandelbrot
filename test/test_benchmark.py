@@ -4,10 +4,10 @@ import pytest
 import sys
 
 
-@pytest.fixture
-def c_values():
-    rows = 1000
-    cols = 1000
+@pytest.fixture(params=[100, 150, 200])
+def c_values(request):
+    rows = request.param
+    cols = request.param
     c_vals = np.zeros((rows, cols), dtype=np.complex128)
 
     xs = np.linspace(-2.0, 0.5, cols)
@@ -25,7 +25,7 @@ def test_python_serial_mandelbrot_benchmark(benchmark, c_values):
 
 
 @pytest.mark.benchmark
-@pytest.mark.parametrize("n_workers", [1, 2, 4, 8, 12, 24])
+@pytest.mark.parametrize("n_workers", [2, 4, 6, 8])
 @pytest.mark.skipif(sys._is_gil_enabled(), reason="Free-threaded python is required")
 def test_python_parallel_mandelbrot_benchmark(benchmark, c_values, n_workers):
     benchmark(mandelbrot_threaded, c_values=c_values, n_workers=n_workers)

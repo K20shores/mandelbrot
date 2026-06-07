@@ -30,7 +30,7 @@ def test_python_serial_mandelbrot():
 def test_python_parallel_mandelbrot():
     c = np.zeros((1, 1), dtype=np.complex128)
     c[0][0] = np.complex128(1, 0)
-    assert mandelbrot_threaded(c, n_workers=1) == 3
+    assert mandelbrot_threaded(c) == 3
 
 
 @pytest.mark.skipif(sys._is_gil_enabled(), reason="Free-threaded python is required")

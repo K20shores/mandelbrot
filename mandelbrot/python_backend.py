@@ -81,6 +81,9 @@ def mandelbrot_threaded(c_values: np.ndarray, max_iterations: int = 100, n_worke
     cols = c_values.shape[1]
     counts = np.zeros((rows, cols), dtype=np.int32)
 
+    if rows < n_workers:
+        n_workers = rows
+
     def work(row_chunks):
         nonlocal counts
         start, end = row_chunks
