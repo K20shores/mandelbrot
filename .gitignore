@@ -219,3 +219,6 @@ __marimo__/
 
 # uv python version
 .python-version
+
+# pytest-benchmark results
+.benchmarks

@@ -19,10 +19,14 @@ def __iteration(z: complex, c: complex, max_iterations: int = 100) -> np.int32:
     int
         The number of iterations it takes for z to become unbounded, up to max_iter
     """
-    iterations = np.int32(0)
-    while np.abs(z) <= 2 and iterations < max_iterations:
-        z = z**2 + c
-        iterations += 1
+    iterations = np.zeros_like(c, dtype=np.int32)
+    mask = np.abs(z) <= 2
+    iter = 0
+    while np.any(mask) and iter < max_iterations:
+        z[mask] = z[mask] * z[mask] + c[mask]
+        iterations[mask] += 1
+        mask = np.abs(z) <= 2
+        iter += 1
     return iterations
 
 
@@ -45,9 +49,8 @@ def mandelbrot(c_values: np.ndarray, max_iterations: int = 100) -> np.int32:
     cols = c_values.shape[1]
     counts = np.zeros((rows, cols), dtype=np.int32)
 
-    for i in range(rows):
-        for j in range(cols):
-            counts[i][j] = __iteration(0, c_values[i][j], max_iterations=max_iterations)
+    for row in range(rows):
+        counts[row] = __iteration(np.zeros_like(c_values[row], dtype=np.complex128), c_values[row], max_iterations=max_iterations)
 
     return counts
 
@@ -88,8 +91,7 @@ def mandelbrot_threaded(c_values: np.ndarray, max_iterations: int = 100, n_worke
         nonlocal counts
         start, end = row_chunks
         for row in range(start, min(end, rows)):
-            for col in range(cols):
-                counts[row][col] = __iteration(0, c_values[row][col], max_iterations=max_iterations)
+            counts[row] = __iteration(np.zeros_like(c_values[row], dtype=np.complex128), c_values[row], max_iterations=max_iterations)
 
     with ThreadPoolExecutor(max_workers=n_workers) as pool:
         div = rows // n_workers
