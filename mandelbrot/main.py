@@ -5,11 +5,26 @@ import matplotlib
 from types import FunctionType
 import argparse
 
-
-def plot(counts):
-    color = "#00ad43"
-    cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", [color, "white"])
-    plt.imshow(np.real(counts), cmap="inferno_r")
+def plot(counts, color_scheme = 'default'):
+    cmap = None
+    norm = None
+    match color_scheme:
+        case 'divergence':
+            max = counts.max().item()
+            # Divergence colormap from https://www.sekinoworld.com/fractal/#intro
+            # |z1| > 2, black
+            # |z2| > 2, red
+            # |z3| > 2, black
+            # etc.
+            # max iterations, white
+            # so, even indices red, odd black
+            cmap = matplotlib.colors.ListedColormap(['red' if i % 2 == 0 else 'black' for i in range(max)] + ['white'])
+            bounds=list(range(max+1))
+            norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
+        case _:
+            color = "#00ad43"
+            cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", [color, "black"])
+    plt.imshow(np.real(counts), cmap=cmap, norm=norm)
     plt.show()
 
 
@@ -24,6 +39,12 @@ def parse_args():
     parser.add_argument("--rows", type=int, default=1000, help="number of rows in the image")
     parser.add_argument("--cols", type=int, default=1000, help="number of columns in the image")
     parser.add_argument("--iterations", type=int, default=100, help="maximum number of iterations")
+    parser.add_argument(
+        "--color_scheme",
+        choices=["default", "divergence"],
+        default="default",
+        help="Which method to use to generate color the image",
+    )
     return parser.parse_args()
 
 
@@ -66,7 +87,7 @@ def main():
             method = mandelbrot_threaded
 
     values = generate_plot(method, args.rows, args.cols, max_iterations=args.iterations)
-    plot(values)
+    plot(values, args.color_scheme)
 
 
 if __name__ == "__main__":
