@@ -5,11 +5,13 @@ import matplotlib
 from types import FunctionType
 import argparse
 
+
 def plot(counts):
-    color = '#00ad43'
-    cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", [color,"white"])
-    plt.imshow(np.real(counts), cmap='inferno_r')
+    color = "#00ad43"
+    cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", [color, "white"])
+    plt.imshow(np.real(counts), cmap="inferno_r")
     plt.show()
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -17,12 +19,13 @@ def parse_args():
         "--method",
         choices=["python_serial", "python_parallel"],
         default="python_serial",
-        help="Which method to use to generate the image"
+        help="Which method to use to generate the image",
     )
-    parser.add_argument('--rows', type=int, default=1000, help='number of rows in the image')
-    parser.add_argument('--cols', type=int, default=1000, help='number of columns in the image')
-    parser.add_argument('--iterations', type=int, default=100, help='maximum number of iterations')
+    parser.add_argument("--rows", type=int, default=1000, help="number of rows in the image")
+    parser.add_argument("--cols", type=int, default=1000, help="number of columns in the image")
+    parser.add_argument("--iterations", type=int, default=100, help="maximum number of iterations")
     return parser.parse_args()
+
 
 def generate_plot(func: FunctionType, rows: int, cols: int, **kwargs):
     """Generate the values for a mandelbrot plot

@@ -50,7 +50,9 @@ def mandelbrot(c_values: np.ndarray, max_iterations: int = 100) -> np.int32:
     counts = np.zeros((rows, cols), dtype=np.int32)
 
     for row in range(rows):
-        counts[row] = __iteration(np.zeros_like(c_values[row], dtype=np.complex128), c_values[row], max_iterations=max_iterations)
+        counts[row] = __iteration(
+            np.zeros_like(c_values[row], dtype=np.complex128), c_values[row], max_iterations=max_iterations
+        )
 
     return counts
 
@@ -91,7 +93,9 @@ def mandelbrot_threaded(c_values: np.ndarray, max_iterations: int = 100, n_worke
         nonlocal counts
         start, end = row_chunks
         for row in range(start, min(end, rows)):
-            counts[row] = __iteration(np.zeros_like(c_values[row], dtype=np.complex128), c_values[row], max_iterations=max_iterations)
+            counts[row] = __iteration(
+                np.zeros_like(c_values[row], dtype=np.complex128), c_values[row], max_iterations=max_iterations
+            )
 
     with ThreadPoolExecutor(max_workers=n_workers) as pool:
         div = rows // n_workers
