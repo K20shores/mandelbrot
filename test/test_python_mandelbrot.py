@@ -8,17 +8,18 @@ import sys
 def c_values():
     rows = 100
     cols = 100
-    c_vals = np.zeros((rows, cols), dtype=np.complex128)
 
     xs = np.linspace(-2.0, 0.5, cols)
     ys = np.linspace(-1.12, 1.12, rows)
     X, Y = np.meshgrid(xs, ys)
-    return X + 1j*Y
+    return X + 1j * Y
+
 
 def test_python_serial_mandelbrot():
     c = np.zeros((1, 1), dtype=np.complex128)
     c[0][0] = np.complex128(1, 0)
     assert mandelbrot(c) == 3
+
 
 def test_python_serial_mandelbrot_convergence(c_values):
     counts = mandelbrot(c_values, k_iterations=4)

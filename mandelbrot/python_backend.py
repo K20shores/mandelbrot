@@ -1,6 +1,7 @@
 import numpy as np
 import sys
 
+
 def __iteration(z: np.complex128, c: np.complex128, max_iterations: int = 100) -> np.int32:
     """Iterate the linear mapping for the mandelbrot set
 
@@ -20,13 +21,13 @@ def __iteration(z: np.complex128, c: np.complex128, max_iterations: int = 100) -
     """
 
     iterations = np.zeros_like(c, dtype=np.int32)
-    mask = np.abs(z) <= 2,
+    mask = (np.abs(z) <= 2,)
     for _ in range(max_iterations):
-        if (not np.any(mask)):
+        if not np.any(mask):
             break
         z[mask] = z[mask] * z[mask] + c[mask]
         iterations[mask] += 1
-        mask = np.abs(z) <= 2,
+        mask = (np.abs(z) <= 2,)
     return iterations
 
 
@@ -67,7 +68,7 @@ def mandelbrot(c_values: np.ndarray, max_iterations: int = 100, k_iterations: in
         k_band = 8
         # past iterations of z that allow us to do convergence checks
         zks = []
-        
+
         # reset z to find convergence
         z[:] = 0
         _z = z[pixels]

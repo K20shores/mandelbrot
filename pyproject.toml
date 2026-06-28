@@ -28,4 +28,4 @@ module-name = "mandelbrot"
 module-root = ""
 
 [tool.ruff]
-line-length = 120
+line-length = 140

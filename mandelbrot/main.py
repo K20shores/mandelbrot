@@ -5,7 +5,8 @@ import matplotlib
 from types import FunctionType
 import argparse
 
-def plot(counts, color_scheme = 'default'):
+
+def plot(counts, color_scheme="default"):
     """Plot the mandelbrot set according to the colorscheme
 
     This requires free-threaded python (python>=3.14t)
@@ -26,7 +27,7 @@ def plot(counts, color_scheme = 'default'):
     cmap = None
     norm = None
     match color_scheme:
-        case 'divergence':
+        case "divergence":
             max = counts.max().item()
             # Divergence colormap from https://www.sekinoworld.com/fractal/#intro
             # |z1| > 2, black
@@ -35,11 +36,11 @@ def plot(counts, color_scheme = 'default'):
             # etc.
             # max iterations, white
             # so, even indices red, odd black
-            cmap = matplotlib.colors.ListedColormap(['red' if i % 2 == 0 else 'black' for i in range(max)] + ['white'])
-            bounds=list(range(max+1))
+            cmap = matplotlib.colors.ListedColormap(["red" if i % 2 == 0 else "black" for i in range(max)] + ["white"])
+            bounds = list(range(max + 1))
             norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
             plt.imshow(counts, cmap=cmap, norm=norm)
-        case 'convergence':
+        case "convergence":
             # Convergence colormap from https://www.sekinoworld.com/fractal/#intro
             # |z_{1+k} - z1| < epsilon, color_1
             # |z_{2+k} - z2| < epsilon, color_2
@@ -49,14 +50,14 @@ def plot(counts, color_scheme = 'default'):
             # etc.
             # leave everything uncolored, black
             rgb = np.zeros((*counts.shape, 4), dtype=np.float64)
-            blue = np.array([0, 204, 255, 255]) /255
-            black = np.array([0, 0, 0, 255]) /255
+            blue = np.array([0, 204, 255, 255]) / 255
+            black = np.array([0, 0, 0, 255]) / 255
             rgb[counts < 0] = black
             rgb[counts == 0] = blue
-            cmap = plt.cm.get_cmap('tab20')
-            for k in range(1, counts.max()+1):
-                rgb[counts == k] = cmap(k/counts.max())
-            plt.imshow(rgb, origin='lower')
+            cmap = plt.cm.get_cmap("tab20")
+            for k in range(1, counts.max() + 1):
+                rgb[counts == k] = cmap(k / counts.max())
+            plt.imshow(rgb, origin="lower")
         case _:
             color = "#00ad43"
             cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", [color, "black"])
@@ -110,11 +111,11 @@ def generate_plot(func: FunctionType, rows: int, cols: int, **kwargs):
     xs = np.linspace(-2.0, 0.5, cols)
     ys = np.linspace(0, 1.12, rows // 2 + 1)
     X, Y = np.meshgrid(xs, ys)
-    c_values = X + 1j*Y
+    c_values = X + 1j * Y
 
     top_half = func(c_values, **kwargs)
     bottom_half = np.flip(top_half, 0)
-    
+
     counts = np.vstack([bottom_half[:-1], top_half])
     return counts
 
@@ -129,18 +130,9 @@ def main():
         case "python_parallel":
             method = mandelbrot_threaded
 
-    counts = generate_plot(
-        method, 
-        args.rows, 
-        args.cols, 
-        max_iterations=args.iterations, 
-        k_iterations=args.k,
-        epsilon=args.epsilon
-    )
-    plot(
-        counts=counts,
-        color_scheme=args.color_scheme
-    )
+    counts = generate_plot(method, args.rows, args.cols, max_iterations=args.iterations, k_iterations=args.k, epsilon=args.epsilon)
+    plot(counts=counts, color_scheme=args.color_scheme)
+
 
 if __name__ == "__main__":
     main()
