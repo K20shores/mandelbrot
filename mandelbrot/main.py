@@ -56,7 +56,7 @@ def plot(counts, color_scheme = 'default'):
             rgb[counts < 0] = black
             rgb[counts == 0] = blue
             rgb[counts == 1] = red
-            # rgb[counts == 2] = green
+            rgb[counts == 2] = green
             plt.imshow(rgb, origin='lower')
         case _:
             color = "#00ad43"
@@ -108,22 +108,15 @@ def generate_plot(func: FunctionType, rows: int, cols: int, **kwargs):
     **kwargs: dict
         Other options that are specific to the generation function
     """
-
-    # these are all of the c values we are going to iterate on
-    c_values = np.zeros((rows, cols), dtype=np.complex128)
-
     xs = np.linspace(-2.0, 0.5, cols)
-    ys = np.linspace(0, 1.12, rows)
+    ys = np.linspace(0, 1.12, rows // 2 + 1)
+    X, Y = np.meshgrid(xs, ys)
+    c_values = X + 1j*Y
 
-    for i in range(rows):
-        for j in range(cols):
-            c_values[i][j] = np.complex128(xs[j], ys[i])
-
-    # top half, reflection can give us the bottom half
     top_half = func(c_values, **kwargs)
-    bottom_half = np.flip(top_half, 1)
+    bottom_half = np.flip(top_half, 0)
     
-    counts = np.stack([top_half, bottom_half[1:]])
+    counts = np.vstack([bottom_half[:-1], top_half])
     return counts
 
 

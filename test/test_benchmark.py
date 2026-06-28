@@ -4,7 +4,7 @@ import pytest
 import sys
 
 
-@pytest.fixture(params=[100, 150, 200])
+@pytest.fixture(params=[100, 500, 1000])
 def c_values(request):
     rows = request.param
     cols = request.param

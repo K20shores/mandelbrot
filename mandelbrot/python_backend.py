@@ -22,7 +22,8 @@ def __k_iterations(z: np.complex128, c: np.complex128, k_iterations: int = 0) ->
         The number of iterations it takes for z to become unbounded, up to max_iter
     """
     for _ in range(k_iterations):
-        z[:] = z * z + c
+        mask = np.abs(z) <= 2,
+        z[mask] = z[mask] * z[mask] + c[mask]
     return z
 
 
@@ -50,12 +51,12 @@ def __iteration(z: np.complex128, c: np.complex128, max_iterations: int = 100, z
 
     iterations = np.zeros_like(c, dtype=np.int32)
     mask = np.abs(z) <= 2,
-    iter = 0
-    while np.any(mask) and iter < max_iterations:
+    for _ in range(max_iterations):
+        if (not np.any(mask)):
+            break
         z[mask] = z[mask] * z[mask] + c[mask]
         iterations[mask] += 1
         mask = np.abs(z) <= 2,
-        iter += 1
     return iterations
 
 
@@ -85,8 +86,7 @@ def mandelbrot(c_values: np.ndarray, max_iterations: int = 100, k_iterations: in
     z = np.zeros_like(c_values, dtype=np.complex128)
 
     # iterate z once to generate the mandelbrot set
-    for row in range(rows):
-        counts[row] = __iteration(z[row], c_values[row], max_iterations=max_iterations)
+    counts = __iteration(z, c_values, max_iterations=max_iterations)
 
     # for convergence coloring
     if k_iterations:
@@ -94,14 +94,12 @@ def mandelbrot(c_values: np.ndarray, max_iterations: int = 100, k_iterations: in
         # pixels represents everything in the mandelbrot set, those points that didn't diverge
         pixels = np.abs(z) < 2
         # we need a second copy of z to compute k iterations ahead of z
-        zk = []
+        zks = []
         for k in range(k_iterations+k_band):
             z_k = np.zeros_like(z, dtype=np.complex128)
             # then lead z by k iterations to obtain z_k, but only for points that didn't diverge
-            for row in range(rows):
-                mask = pixels[row]
-                z_k[row][mask] = __k_iterations(z_k[row][mask], c_values[row][mask], k_iterations=k+1)
-            zk.append(z_k)
+            z_k[pixels] = __k_iterations(z_k[pixels], c_values[pixels], k_iterations=k+1)
+            zks.append(z_k)
         
         z[:] = 0
         # we need to carry three pieces of information
@@ -113,20 +111,18 @@ def mandelbrot(c_values: np.ndarray, max_iterations: int = 100, k_iterations: in
         # 3. points that diverge (-1)
         # everything that diverged becomes negative
         counts[~pixels] = -1
-        for row in range(rows):
-            iter = 1
-            pixel_mask = pixels[row]
-            _z = z[row][pixel_mask]
-            _c_values = c_values[row][pixel_mask]
-            _counts = counts[row][pixel_mask]
-            while iter <= max_iterations:
-                _z = _z * _z + _c_values
-                for k in range(k_iterations+k_band):
-                    zk[k][row][pixel_mask] = zk[k][row][pixel_mask] * zk[k][row][pixel_mask] + _c_values
-                    mask = (np.abs(zk[k][row][pixel_mask] - _z) < epsilon) & ((_counts == max_iterations) | (_counts > k + 1))
-                    _counts[mask] = k+1
-                iter += 1
-            counts[row][pixel_mask] = _counts
+        _z = z[pixels]
+        _c_values = c_values[pixels]
+        _counts = counts[pixels]
+        _zks = [zk[pixels] for zk in zks]
+        for _ in range(max_iterations):
+            _z = _z * _z + _c_values
+            for k in range(k_iterations+k_band):
+                alive = np.abs(_zks[k]) < 2
+                _zks[k][alive] = _zks[k][alive] * _zks[k][alive] + _c_values[alive]
+                mask = (np.abs(_zks[k] - _z) < epsilon) & ((_counts == max_iterations) | (_counts > k + 1))
+                _counts[mask] = k+1
+        counts[pixels] = _counts
         boundary = pixels & (counts == max_iterations)
         counts[counts > k_iterations] = -1
         counts[boundary] = 0
@@ -170,8 +166,7 @@ def mandelbrot_threaded(c_values: np.ndarray, max_iterations: int = 100, n_worke
     def work(row_chunks):
         nonlocal counts
         start, end = row_chunks
-        for row in range(start, min(end, rows)):
-            counts[row] = __iteration(z[row], c_values[row], max_iterations=max_iterations)
+        counts[start:end] = __iteration(z[start:end], c_values[start:end], max_iterations=max_iterations)
 
     with ThreadPoolExecutor(max_workers=n_workers) as pool:
         div = rows // n_workers
@@ -179,4 +174,4 @@ def mandelbrot_threaded(c_values: np.ndarray, max_iterations: int = 100, n_worke
         row_chunks = [(start, end) for start, end in zip(chunks[:-1], chunks[1:])]
         list(pool.map(work, row_chunks))
 
-    return z, counts
+    return counts
