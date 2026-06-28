@@ -6,7 +6,7 @@ from types import FunctionType
 import argparse
 
 
-def plot(counts, color_scheme="default"):
+def plot(counts, color_scheme="default", save_path=None):
     """Plot the mandelbrot set according to the colorscheme
 
     This requires free-threaded python (python>=3.14t)
@@ -23,7 +23,10 @@ def plot(counts, color_scheme="default"):
         The epsilon value used to color when doing the convergence scheme
     color_scheme: {'divergence', 'convergence', 'default'}, optional (default='default')
         The colorscheme to use when making the plot
+    save_path: str, optional (default=None)
+        If present, save the image to the path rather than display it
     """
+    fig, ax = plt.subplots()
     cmap = None
     norm = None
     match color_scheme:
@@ -39,7 +42,7 @@ def plot(counts, color_scheme="default"):
             cmap = matplotlib.colors.ListedColormap(["red" if i % 2 == 0 else "black" for i in range(max)] + ["white"])
             bounds = list(range(max + 1))
             norm = matplotlib.colors.BoundaryNorm(bounds, cmap.N)
-            plt.imshow(counts, cmap=cmap, norm=norm)
+            ax.imshow(counts, cmap=cmap, norm=norm)
         case "convergence":
             # Convergence colormap from https://www.sekinoworld.com/fractal/#intro
             # |z_{1+k} - z1| < epsilon, color_1
@@ -57,13 +60,18 @@ def plot(counts, color_scheme="default"):
             cmap = plt.cm.get_cmap("tab20")
             for k in range(1, counts.max() + 1):
                 rgb[counts == k] = cmap(k / counts.max())
-            plt.imshow(rgb, origin="lower")
+            ax.imshow(rgb, origin="lower")
         case _:
             color = "#00ad43"
             cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", [color, "black"])
-            plt.imshow(counts, cmap=cmap, norm=norm)
-    plt.show()
-
+            ax.imshow(counts, cmap=cmap, norm=norm)
+    ax.spines[:].set_visible(False)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    if save_path:
+        fig.savefig(save_path, bbox_inches="tight", dpi=300)
+    else:
+        plt.show()
 
 def parse_args():
     """Setup and read command line arguments
@@ -91,6 +99,7 @@ def parse_args():
         default="default",
         help="Which method to use to generate color the image",
     )
+    parser.add_argument("--save", type=str, help="File path to save the image")
     return parser.parse_args()
 
 
@@ -131,7 +140,7 @@ def main():
             method = mandelbrot_threaded
 
     counts = generate_plot(method, args.rows, args.cols, max_iterations=args.iterations, k_iterations=args.k, epsilon=args.epsilon)
-    plot(counts=counts, color_scheme=args.color_scheme)
+    plot(counts=counts, color_scheme=args.color_scheme, save_path=args.save)
 
 
 if __name__ == "__main__":

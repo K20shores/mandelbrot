@@ -1,5 +1,7 @@
 # Mandelbrot, many ways
 
+![Mandelbrot colored by divergence](./docs/divergence.png)
+
 This repository is a companion set of code along with a series of blog posts. 
 The posts detail how Python can wrap many lower level languages. 
 I do so by demonstrating generation of the Mandelbrot set, in many languages 
