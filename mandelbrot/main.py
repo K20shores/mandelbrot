@@ -92,22 +92,38 @@ def parse_args():
     parser.add_argument("--rows", type=int, default=1000, help="number of rows in the image")
     parser.add_argument("--cols", type=int, default=1000, help="number of columns in the image")
     parser.add_argument("--iterations", type=int, default=100, help="maximum number of iterations")
-    parser.add_argument("--epsilon", type=float, default=1e-6, help="Convergence scheme epsilon comparison")
-    parser.add_argument("--k", type=int, default=None, help="k iterations, for convergence scheme")
+    parser.add_argument("--save", type=str, help="File path to save the image")
     parser.add_argument(
         "--color_scheme",
         choices=["default", "divergence", "convergence"],
         default="default",
         help="Which method to use to generate color the image",
     )
+
+    convergence_group = parser.add_argument_group("Convergence options")
+    convergence_group.add_argument("--epsilon", type=float, default=1e-6, help="Convergence scheme epsilon comparison")
+    convergence_group.add_argument("--k", type=int, default=None, help="k iterations, for convergence scheme")
+
+    center_group = parser.add_argument_group("view (choose bounds or center)")
+    center_group.add_argument("--center", type=float, default=None, nargs=2, metavar=("CX", "CY"), help="The center point; use with --radius")
+    center_group.add_argument("--radius", type=float, default=None, help="The radius around center")
+
     parser.add_argument("--xmin", type=float, default=-2.0, help="The minimum x of the canvas")
     parser.add_argument("--xmax", type=float, default=0.5, help="The maximum x of the canvas")
     parser.add_argument("--ymin", type=float, default=-1.12, help="The minimum y of the canvas")
     parser.add_argument("--ymax", type=float, default=1.12, help="The maximum y of the canvas")
-    parser.add_argument("--save", type=str, help="File path to save the image")
     args = parser.parse_args()
+
     if args.color_scheme == "convergence" and args.k is None:
         parser.error("--k is required when --color_scheme is 'convergence'")
+    if args.center:
+        if not args.radius:
+            parser.error("--radius is required when --center is supplied")
+        cx, cy = args.center
+        ry = args.radius * args.rows / args.cols
+        args.xmin, args.xmax = cx - args.radius, cx + args.radius
+        args.ymin, args.ymax = cy - ry, cy + ry
+
     return args
 
 
