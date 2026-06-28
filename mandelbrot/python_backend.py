@@ -1,32 +1,6 @@
 import numpy as np
 import sys
 
-
-def __k_iterations(z: np.complex128, c: np.complex128, k_iterations: int = 0) -> np.int32:
-    """Iterate the linear mapping for the mandelbrot set exactly k times
-
-    This is used when computing the convergence scheme
-
-     Parameters
-    ----------
-    z : complex
-        Initial z value
-    c : complex
-        Intial c value
-    k_iterations: int, optional (default=100)
-        The number of iterations to bail out at
-
-    Returns
-    -------
-    int
-        The number of iterations it takes for z to become unbounded, up to max_iter
-    """
-    for _ in range(k_iterations):
-        mask = np.abs(z) <= 2,
-        z[mask] = z[mask] * z[mask] + c[mask]
-    return z
-
-
 def __iteration(z: np.complex128, c: np.complex128, max_iterations: int = 100, z_k: np.complex128 = None, epsilon: float = None) -> np.int32:
     """Iterate the linear mapping for the mandelbrot set
 
@@ -92,17 +66,7 @@ def mandelbrot(c_values: np.ndarray, max_iterations: int = 100, k_iterations: in
         # only operate on those
         pixels = np.abs(z) < 2
 
-        # will will run several a total of k_bands ahead of z, this allows us to color individual k-converged atoms
-        # and allows us to color other atoms black (see below)
-        k_band = 8
-        zks = []
-        for k in range(k_iterations+k_band):
-            z_k = np.zeros_like(z, dtype=np.complex128)
-            # then lead z by k iterations to obtain z_k, but only for points that didn't diverge
-            z_k[pixels] = __k_iterations(z_k[pixels], c_values[pixels], k_iterations=k+1)
-            zks.append(z_k)
-        
-        # we need to carry three pieces of information to properly apply convergence coloring
+        # we need counts to represent three pieces of information to properly apply convergence coloring
         # 1. points on the mandelbrot set and which neither converge or diverge, our boundary, we will set this to 0
         #   - "...the Julia set ... is approximated by ... c(i, j) = M and d(i, j) = M"
         #   - ^ from https://www.sekinoworld.com/fractal/coloring.htm
@@ -110,19 +74,27 @@ def mandelbrot(c_values: np.ndarray, max_iterations: int = 100, k_iterations: in
         # 2. points on the mandelbrot set that do converge (positive number, set to which period k it convergences to)
         # 3. points that diverge. For this color scheme, we will indicate them with -1
 
+        # will will run several a total of k_bands ahead of z, this allows us to color individual k-converged atoms
+        # and allows us to color other atoms black (see below)
+        k_band = 8
+        # past iterations of z that allow us to do convergence checks
+        zks = []
+        
         # reset z to find convergence
         z[:] = 0
         _z = z[pixels]
         _c_values = c_values[pixels]
         _counts = counts[pixels]
-        _zks = [zk[pixels] for zk in zks]
         for _ in range(max_iterations):
+            zks.append(_z.copy())
+
+            if len(zks) > k_iterations + k_band:
+                del zks[0]
+
             _z = _z * _z + _c_values
-            for k in range(k_iterations+k_band):
-                alive = np.abs(_zks[k]) < 2
-                _zks[k][alive] = _zks[k][alive] * _zks[k][alive] + _c_values[alive]
-                mask = (np.abs(_zks[k] - _z) < epsilon) & ((_counts == max_iterations) | (_counts > k + 1))
-                _counts[mask] = k+1
+            for k, zk in enumerate(reversed(zks), start=1):
+                mask = (np.abs(_z - zk) < epsilon) & ((_counts == max_iterations) | (_counts > k))
+                _counts[mask] = k
         counts[pixels] = _counts
         boundary = pixels & (counts == max_iterations)
         # boundary points
