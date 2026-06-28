@@ -2,7 +2,7 @@ import numpy as np
 import sys
 
 
-def __iteration(z: np.complex128, c: np.complex128, max_iterations: int = 100, k_iterations=None, epsilon=None) -> np.int32:
+def __iteration(z: np.complex128, c: np.complex128, max_iterations: int = 100, k_iterations: int = None, epsilon: float = 1e-6) -> np.int32:
     """Iterate the linear mapping for the mandelbrot set
 
      Parameters
@@ -13,6 +13,11 @@ def __iteration(z: np.complex128, c: np.complex128, max_iterations: int = 100, k
         Initial c value
     max_iterations: int, optional (default=100)
         The number of iterations to bail out at
+    k_iterations: int, optional (default=None)
+        Supplied when computing the convergence scheme, this is the number of iterations to continue
+        computing the linear mapping for. When supplied, the return value will be 2 ndarrays
+    epsilon: float, optional (default=1e-6)
+        The epsilon check to use for convergence, when k_iterations is supplied
 
     Returns
     -------
