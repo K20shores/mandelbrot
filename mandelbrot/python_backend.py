@@ -1,7 +1,7 @@
 import numpy as np
 import sys
 
-def __iteration(z: np.complex128, c: np.complex128, max_iterations: int = 100, z_k: np.complex128 = None, epsilon: float = None) -> np.int32:
+def __iteration(z: np.complex128, c: np.complex128, max_iterations: int = 100) -> np.int32:
     """Iterate the linear mapping for the mandelbrot set
 
      Parameters
@@ -9,13 +9,9 @@ def __iteration(z: np.complex128, c: np.complex128, max_iterations: int = 100, z
     z : np.complex128
         Initial z value
     c : np.complex128
-        Intial c value
+        Initial c value
     max_iterations: int, optional (default=100)
         The number of iterations to bail out at
-    z_k : np.complex128, optional (default=None)
-        z pre-run k steps forward, only needed when doing a convergence check
-    epsilon : float, optional (default=None)
-        the convergence epsilon |z_k - z| < epsilon
 
     Returns
     -------
@@ -34,7 +30,7 @@ def __iteration(z: np.complex128, c: np.complex128, max_iterations: int = 100, z
     return iterations
 
 
-def mandelbrot(c_values: np.ndarray, max_iterations: int = 100, k_iterations: int = None, epsilon: float = None) -> np.int32:
+def mandelbrot(c_values: np.ndarray, max_iterations: int = 100, k_iterations: int = None, epsilon: float = 1e-6) -> np.int32:
     """Compute the mandelbrot set
 
      Parameters
@@ -46,7 +42,7 @@ def mandelbrot(c_values: np.ndarray, max_iterations: int = 100, k_iterations: in
     k_iterations: int, optional (default=None)
         Supplied when computing the convergence scheme, this is the number of iterations to continue
         computing the linear mapping for. When supplied, the return value will be 2 ndarrays
-    epsilon: float, optional (default=None)
+    epsilon: float, optional (default=1e-6)
         The epsilon check to use for convergence, when k_iterations is supplied
 
     Returns
@@ -119,7 +115,7 @@ def mandelbrot_threaded(c_values: np.ndarray, max_iterations: int = 100, n_worke
         All c values we will iterate the mandelbrot map for
     max_iterations: int, optional (default=100)
         The number of iterations to bail out at
-    n_workers: int, optinal (default=8)
+    n_workers: int, optional (default=8)
         The number of workers to run in parallel
 
     Returns
