@@ -80,8 +80,6 @@ def mandelbrot(c_values: np.ndarray, max_iterations: int = 100, k_iterations: in
     np.ndarray
         The number of iterations for each c value where z became unbounded
     """
-    rows = c_values.shape[0]
-    cols = c_values.shape[1]
     counts = np.zeros_like(c_values, dtype=np.int32)
     z = np.zeros_like(c_values, dtype=np.complex128)
 
@@ -90,10 +88,13 @@ def mandelbrot(c_values: np.ndarray, max_iterations: int = 100, k_iterations: in
 
     # for convergence coloring
     if k_iterations:
-        k_band = 8
         # pixels represents everything in the mandelbrot set, those points that didn't diverge
+        # only operate on those
         pixels = np.abs(z) < 2
-        # we need a second copy of z to compute k iterations ahead of z
+
+        # will will run several a total of k_bands ahead of z, this allows us to color individual k-converged atoms
+        # and allows us to color other atoms black (see below)
+        k_band = 8
         zks = []
         for k in range(k_iterations+k_band):
             z_k = np.zeros_like(z, dtype=np.complex128)
@@ -101,16 +102,16 @@ def mandelbrot(c_values: np.ndarray, max_iterations: int = 100, k_iterations: in
             z_k[pixels] = __k_iterations(z_k[pixels], c_values[pixels], k_iterations=k+1)
             zks.append(z_k)
         
-        z[:] = 0
-        # we need to carry three pieces of information
-        # 1. points on the mandelbrot set and don't converge or diverge (0)
-        #   - "Note that the Julia set (which is the boundary of the filled-in Julia set) is approximated by the set of all pixels (i, j) on the canvas such that c(i, j) = M and d(i, j) = M, which is a region of interest in chaos theory."
+        # we need to carry three pieces of information to properly apply convergence coloring
+        # 1. points on the mandelbrot set and which neither converge or diverge, our boundary, we will set this to 0
+        #   - "...the Julia set ... is approximated by ... c(i, j) = M and d(i, j) = M"
         #   - ^ from https://www.sekinoworld.com/fractal/coloring.htm
-        #   - this approximates the boundary
-        # 2. points on the mandelbrot set that do converge (positive number, when we first detect convergence)
-        # 3. points that diverge (-1)
-        # everything that diverged becomes negative
-        counts[~pixels] = -1
+        #   - those words means that the boundary is the difference between things that converged and things that didn't diverge
+        # 2. points on the mandelbrot set that do converge (positive number, set to which period k it convergences to)
+        # 3. points that diverge. For this color scheme, we will indicate them with -1
+
+        # reset z to find convergence
+        z[:] = 0
         _z = z[pixels]
         _c_values = c_values[pixels]
         _counts = counts[pixels]
@@ -124,8 +125,12 @@ def mandelbrot(c_values: np.ndarray, max_iterations: int = 100, k_iterations: in
                 _counts[mask] = k+1
         counts[pixels] = _counts
         boundary = pixels & (counts == max_iterations)
-        counts[counts > k_iterations] = -1
+        # boundary points
         counts[boundary] = 0
+        # diverged points
+        counts[~pixels] = -1
+        # atoms which are not on the boundary and are not within k iterations shouldn't be colored
+        counts[counts > k_iterations] = -1
 
     return counts
 
