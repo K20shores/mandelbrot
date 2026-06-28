@@ -2,35 +2,86 @@ import numpy as np
 import sys
 
 
-def __iteration(z: complex, c: complex, max_iterations: int = 100) -> np.int32:
+def __iteration(z: np.complex128, c: np.complex128, max_iterations: int = 100, k_iterations: int = None, epsilon: float = 1e-6) -> np.int32:
     """Iterate the linear mapping for the mandelbrot set
 
      Parameters
     ----------
-    z : complex
+    z : np.complex128
         Initial z value
-    c : complex
-        Intial c value
+    c : np.complex128
+        Initial c value
     max_iterations: int, optional (default=100)
         The number of iterations to bail out at
+    k_iterations: int, optional (default=None)
+        Supplied when computing the convergence scheme, this is the number of iterations to continue
+        computing the linear mapping for. When supplied, the return value will be 2 ndarrays
+    epsilon: float, optional (default=1e-6)
+        The epsilon check to use for convergence, when k_iterations is supplied
 
     Returns
     -------
     int
         The number of iterations it takes for z to become unbounded, up to max_iter
     """
-    iterations = np.zeros_like(c, dtype=np.int32)
-    mask = np.abs(z) <= 2
-    iter = 0
-    while np.any(mask) and iter < max_iterations:
+
+    counts = np.zeros_like(c, dtype=np.int32)
+    mask = (np.abs(z) <= 2,)
+    for _ in range(max_iterations):
+        if not np.any(mask):
+            break
         z[mask] = z[mask] * z[mask] + c[mask]
-        iterations[mask] += 1
-        mask = np.abs(z) <= 2
-        iter += 1
-    return iterations
+        counts[mask] += 1
+        mask = (np.abs(z) <= 2,)
+
+    # for convergence coloring
+    if k_iterations:
+        # pixels represents everything in the mandelbrot set, those points that didn't diverge
+        # only operate on those
+        pixels = np.abs(z) < 2
+
+        # will will run several a total of k_bands ahead of z, this allows us to color individual k-converged atoms
+        # and allows us to color other atoms black (see below)
+        k_band = 8
+        # past iterations of z that allow us to do convergence checks
+        zks = []
+
+        # reset z to find convergence
+        z[:] = 0
+        _z = z[pixels]
+        _c_values = c[pixels]
+        _counts = counts[pixels]
+        for _ in range(max_iterations):
+            zks.append(_z.copy())
+
+            if len(zks) > k_iterations + k_band:
+                del zks[0]
+
+            _z = _z * _z + _c_values
+            for k, zk in enumerate(reversed(zks), start=1):
+                mask = (np.abs(_z - zk) < epsilon) & ((_counts == max_iterations) | (_counts > k))
+                _counts[mask] = k
+        counts[pixels] = _counts
+
+        # we need counts to represent three pieces of information to properly apply convergence coloring
+        # 1. points on the mandelbrot set and which neither converge or diverge, our boundary, we will set this to 0
+        #   - "...the Julia set ... is approximated by ... c(i, j) = M and d(i, j) = M"
+        #   - ^ from https://www.sekinoworld.com/fractal/coloring.htm
+        #   - those words means that the boundary is the difference between things that converged and things that didn't diverge
+        # 2. points on the mandelbrot set that do converge (positive number, set to which period k it convergences to)
+        # 3. points that diverge. For this color scheme, we will indicate them with -1
+
+        boundary = pixels & (counts == max_iterations)
+        # boundary points
+        counts[boundary] = 0
+        # diverged points
+        counts[~pixels] = -1
+        # atoms which are not on the boundary and are not within k iterations shouldn't be colored
+        counts[counts > k_iterations] = -1
+    return counts
 
 
-def mandelbrot(c_values: np.ndarray, max_iterations: int = 100) -> np.int32:
+def mandelbrot(c_values: np.ndarray, max_iterations: int = 100, k_iterations: int = None, epsilon: float = 1e-6) -> np.int32:
     """Compute the mandelbrot set
 
      Parameters
@@ -39,25 +90,27 @@ def mandelbrot(c_values: np.ndarray, max_iterations: int = 100) -> np.int32:
         All c values we will iterate the mandelbrot map for
     max_iterations: int, optional (default=100)
         The number of iterations to bail out at
+    k_iterations: int, optional (default=None)
+        Supplied when computing the convergence scheme, this is the number of iterations to continue
+        computing the linear mapping for. When supplied, the return value will be 2 ndarrays
+    epsilon: float, optional (default=1e-6)
+        The epsilon check to use for convergence, when k_iterations is supplied
 
     Returns
     -------
     np.ndarray
         The number of iterations for each c value where z became unbounded
     """
-    rows = c_values.shape[0]
-    cols = c_values.shape[1]
-    counts = np.zeros((rows, cols), dtype=np.int32)
+    counts = np.zeros_like(c_values, dtype=np.int32)
+    z = np.zeros_like(c_values, dtype=np.complex128)
 
-    for row in range(rows):
-        counts[row] = __iteration(
-            np.zeros_like(c_values[row], dtype=np.complex128), c_values[row], max_iterations=max_iterations
-        )
+    # iterate z once to generate the mandelbrot set
+    counts = __iteration(z, c_values, max_iterations=max_iterations, k_iterations=k_iterations, epsilon=epsilon)
 
     return counts
 
 
-def mandelbrot_threaded(c_values: np.ndarray, max_iterations: int = 100, n_workers=8) -> np.int32:
+def mandelbrot_threaded(c_values: np.ndarray, max_iterations: int = 100, n_workers: int = 8, k_iterations: int = None, epsilon: float = 1e-6) -> np.int32:
     """Compute the mandelbrot set in parallel
 
     This requires free-threaded python (python>=3.14t)
@@ -68,7 +121,7 @@ def mandelbrot_threaded(c_values: np.ndarray, max_iterations: int = 100, n_worke
         All c values we will iterate the mandelbrot map for
     max_iterations: int, optional (default=100)
         The number of iterations to bail out at
-    n_workers: int, optinal (default=8)
+    n_workers: int, optional (default=8)
         The number of workers to run in parallel
 
     Returns
@@ -85,6 +138,7 @@ def mandelbrot_threaded(c_values: np.ndarray, max_iterations: int = 100, n_worke
     rows = c_values.shape[0]
     cols = c_values.shape[1]
     counts = np.zeros((rows, cols), dtype=np.int32)
+    z = np.zeros((rows, cols), dtype=np.complex128)
 
     if rows < n_workers:
         n_workers = rows
@@ -92,10 +146,7 @@ def mandelbrot_threaded(c_values: np.ndarray, max_iterations: int = 100, n_worke
     def work(row_chunks):
         nonlocal counts
         start, end = row_chunks
-        for row in range(start, min(end, rows)):
-            counts[row] = __iteration(
-                np.zeros_like(c_values[row], dtype=np.complex128), c_values[row], max_iterations=max_iterations
-            )
+        counts[start:end] = __iteration(z[start:end], c_values[start:end], max_iterations=max_iterations, k_iterations=k_iterations, epsilon=epsilon)
 
     with ThreadPoolExecutor(max_workers=n_workers) as pool:
         div = rows // n_workers
