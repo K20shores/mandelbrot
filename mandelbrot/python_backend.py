@@ -66,14 +66,6 @@ def mandelbrot(c_values: np.ndarray, max_iterations: int = 100, k_iterations: in
         # only operate on those
         pixels = np.abs(z) < 2
 
-        # we need counts to represent three pieces of information to properly apply convergence coloring
-        # 1. points on the mandelbrot set and which neither converge or diverge, our boundary, we will set this to 0
-        #   - "...the Julia set ... is approximated by ... c(i, j) = M and d(i, j) = M"
-        #   - ^ from https://www.sekinoworld.com/fractal/coloring.htm
-        #   - those words means that the boundary is the difference between things that converged and things that didn't diverge
-        # 2. points on the mandelbrot set that do converge (positive number, set to which period k it convergences to)
-        # 3. points that diverge. For this color scheme, we will indicate them with -1
-
         # will will run several a total of k_bands ahead of z, this allows us to color individual k-converged atoms
         # and allows us to color other atoms black (see below)
         k_band = 8
@@ -96,6 +88,15 @@ def mandelbrot(c_values: np.ndarray, max_iterations: int = 100, k_iterations: in
                 mask = (np.abs(_z - zk) < epsilon) & ((_counts == max_iterations) | (_counts > k))
                 _counts[mask] = k
         counts[pixels] = _counts
+
+        # we need counts to represent three pieces of information to properly apply convergence coloring
+        # 1. points on the mandelbrot set and which neither converge or diverge, our boundary, we will set this to 0
+        #   - "...the Julia set ... is approximated by ... c(i, j) = M and d(i, j) = M"
+        #   - ^ from https://www.sekinoworld.com/fractal/coloring.htm
+        #   - those words means that the boundary is the difference between things that converged and things that didn't diverge
+        # 2. points on the mandelbrot set that do converge (positive number, set to which period k it convergences to)
+        # 3. points that diverge. For this color scheme, we will indicate them with -1
+
         boundary = pixels & (counts == max_iterations)
         # boundary points
         counts[boundary] = 0
