@@ -50,13 +50,12 @@ def plot(counts, color_scheme = 'default'):
             # leave everything uncolored, black
             rgb = np.zeros((*counts.shape, 4), dtype=np.float64)
             blue = np.array([0, 204, 255, 255]) /255
-            green = np.array([0, 255, 200, 255]) /255
             black = np.array([0, 0, 0, 255]) /255
-            red = np.array([255, 0, 0, 255]) /255
             rgb[counts < 0] = black
             rgb[counts == 0] = blue
-            rgb[counts == 1] = red
-            rgb[counts == 2] = green
+            cmap = plt.cm.get_cmap('tab20')
+            for k in range(1, counts.max()+1):
+                rgb[counts == k] = cmap(k/counts.max())
             plt.imshow(rgb, origin='lower')
         case _:
             color = "#00ad43"
