@@ -48,6 +48,7 @@ def test_compare_serial_parallel(c_values):
     for row in range(rows):
         assert np.all(serial[row] == parallel[row]), f"Row {row} doesn't match"
 
+
 @pytest.mark.skipif(sys._is_gil_enabled(), reason="Free-threaded python is required")
 def test_python_parallel_mandelbrot_convergence(c_values):
     counts = mandelbrot_threaded(c_values, k_iterations=4)

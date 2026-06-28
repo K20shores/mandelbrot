@@ -110,7 +110,9 @@ def mandelbrot(c_values: np.ndarray, max_iterations: int = 100, k_iterations: in
     return counts
 
 
-def mandelbrot_threaded(c_values: np.ndarray, max_iterations: int = 100, n_workers: int = 8, k_iterations: int = None, epsilon: float = 1e-6) -> np.int32:
+def mandelbrot_threaded(
+    c_values: np.ndarray, max_iterations: int = 100, n_workers: int = 8, k_iterations: int = None, epsilon: float = 1e-6
+) -> np.int32:
     """Compute the mandelbrot set in parallel
 
     This requires free-threaded python (python>=3.14t)
@@ -123,6 +125,11 @@ def mandelbrot_threaded(c_values: np.ndarray, max_iterations: int = 100, n_worke
         The number of iterations to bail out at
     n_workers: int, optional (default=8)
         The number of workers to run in parallel
+    k_iterations: int, optional (default=None)
+        Supplied when computing the convergence scheme, this is the number of iterations to continue
+        computing the linear mapping for. When supplied, the return value will be 2 ndarrays
+    epsilon: float, optional (default=1e-6)
+        The epsilon check to use for convergence, when k_iterations is supplied
 
     Returns
     -------
@@ -135,10 +142,9 @@ def mandelbrot_threaded(c_values: np.ndarray, max_iterations: int = 100, n_worke
 
     from concurrent.futures import ThreadPoolExecutor
 
-    rows = c_values.shape[0]
-    cols = c_values.shape[1]
-    counts = np.zeros((rows, cols), dtype=np.int32)
-    z = np.zeros((rows, cols), dtype=np.complex128)
+    counts = np.zeros_like(c_values, dtype=np.int32)
+    z = np.zeros_like(c_values, dtype=np.complex128)
+    rows = counts.shape[0]
 
     if rows < n_workers:
         n_workers = rows
@@ -146,7 +152,9 @@ def mandelbrot_threaded(c_values: np.ndarray, max_iterations: int = 100, n_worke
     def work(row_chunks):
         nonlocal counts
         start, end = row_chunks
-        counts[start:end] = __iteration(z[start:end], c_values[start:end], max_iterations=max_iterations, k_iterations=k_iterations, epsilon=epsilon)
+        counts[start:end] = __iteration(
+            z[start:end], c_values[start:end], max_iterations=max_iterations, k_iterations=k_iterations, epsilon=epsilon
+        )
 
     with ThreadPoolExecutor(max_workers=n_workers) as pool:
         div = rows // n_workers
