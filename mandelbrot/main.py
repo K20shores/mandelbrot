@@ -1,9 +1,18 @@
 from mandelbrot.python_backend import mandelbrot, mandelbrot_threaded
+import matplotlib.colors
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 from types import FunctionType
 import argparse
+
+def power_color(counts, m1, m2, power, color1, color2):
+    color1 = np.full((*counts.shape, 3), matplotlib.colors.to_rgb(color1), dtype=np.float64)
+    color2 = np.full((*counts.shape, 3), matplotlib.colors.to_rgb(color2), dtype=np.float64)
+    s = (counts - m1) / (m2 - m1)
+    t = s[:,:,np.newaxis] ** power
+    rgb = (1-t)*color1 + color2*t
+    return rgb
 
 
 def plot(counts, color_scheme="default", save_path=None):
@@ -63,8 +72,11 @@ def plot(counts, color_scheme="default", save_path=None):
             ax.imshow(rgb, origin="lower")
         case _:
             color = "#00ad43"
-            cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", [color, "black"])
-            ax.imshow(counts, cmap=cmap, norm=norm)
+            black = "#000000"
+            cols = power_color(counts, 0, counts.max(), 0.1, color, black)
+            ax.imshow(cols, origin="lower")
+            # cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", [color, "black"])
+            # ax.imshow(counts, cmap=cmap, norm=norm)
     ax.spines[:].set_visible(False)
     ax.set_xticks([])
     ax.set_yticks([])
@@ -188,7 +200,7 @@ def main():
         k_iterations=args.k,
         epsilon=args.epsilon,
     )
-    plot(counts=counts, color_scheme=args.color_scheme, save_path=args.save)
+    plot(counts, color_scheme=args.color_scheme, save_path=args.save)
 
 
 if __name__ == "__main__":
